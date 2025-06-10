@@ -9,10 +9,12 @@ def main():
     num_rows_dep = 3
     num_rows_man = 5
     num_rows_classifiers = 10
+    num_rows_goods = 10
 
     dep = getDictFakeDepartments(num_rows_dep, fake_data)
     man = getDictFakeManagers(num_rows_man, dep["uuid"], fake_data)
     classifiers = getDictFakeClassifiers(num_rows_classifiers)
+    goods = getDictFakeGoods_classificators(num_rows_goods, fake_data, classifiers["uuid"])
         
     try:
         with CreateFakeDataPG() as pg:
@@ -210,6 +212,42 @@ def getDictFakeClassifiers(num_rows):
             Classifiers["value_of_measurement_string"].append(el["value of measurement string"])
 
     return Classifiers   
+
+def getDictFakeGoods(num_rows, fake_data, classif_uuids):
+
+    len_classif_uuids = len(classif_uuids)
+
+    goods = {"UUID": [],
+            "description": [],
+            "good_classifier_uuid": []}
+
+
+    good_classificators = {"UUID": [],
+                            "good_uuid": [],
+                            "classifier_uuid": []}
+    
+
+
+    for _ in range(num_rows):
+        goods["UUID"].append(str(uuid.uuid4()))
+        goods["description"].append(fake_data.company())
+
+        good_classificators["UUID"].append(str(uuid.uuid4()))
+        good_classificators["classifier_uuid"].append(random.randint(0, len_classif_uuids - 1))
+
+   
+    for i in range(len(goods["UUID"])):
+
+        elem_uuid = goods["UUID"][i]
+        goods["good_classifier_uuid"].append([elem_uuid, []])
+
+        for _ in range(random.randint(2, 5)):
+            
+            goods["good_classifier_uuid"][i][1].append(random.choice(good_classificators["UUID"]))
+            good_classificators["classifier_uuid"].append(elem_uuid)
+
+    
+    return [goods, good_classificators]
 
 
         
