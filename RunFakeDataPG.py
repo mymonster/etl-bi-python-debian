@@ -10,11 +10,13 @@ def main():
     num_rows_man = 5
     num_rows_classifiers = 10
     num_rows_goods = 10
+    num_rows_partners = 5
 
     dep = getDictFakeDepartments(num_rows_dep, fake_data)
     man = getDictFakeManagers(num_rows_man, dep["uuid"], fake_data)
     classifiers = getDictFakeClassifiers(num_rows_classifiers)
-    goods = getDictFakeGoods_classificators(num_rows_goods, fake_data, classifiers["uuid"])
+    goods = getDictFakeGoods(num_rows_goods, fake_data, classifiers["uuid"])
+    partners = getDictFakePartners(num_rows_partners, fake_data)
         
     try:
         with CreateFakeDataPG() as pg:
@@ -55,6 +57,31 @@ def main():
                                                  value_of_measurement_string_classifiers))
 
 
+
+            for i in range(len(goods["goods"]["uuid"])):
+                uuid_goods = goods["goods"]["uuid"][i]
+                description_goods = goods["goods"]["description"][i]
+                good_classifier_uuid_goods = goods["goods"]["good_classifier_uuid"][i]
+
+                pg.cursor.execute("""
+                INSERT INTO good ("UUID", description, good_classifier_uuid)
+                VALUES (%s, %s, %s)""", (uuid_goods, 
+                                        description_goods, 
+                                        good_classifier_uuid_goods, 
+                                        ))
+
+           
+            for i in range(len(goods["good_classificators"]["good_uuid"])):
+                uuid_good_classificators = goods["good_classificators"]["uuid"][i]
+                good_uuid_good_classificators = goods["good_classificators"]["good_uuid"][i]
+                classifier_uuid_good_classificators = goods["good_classificators"]["classifier_uuid"][i]
+
+                pg.cursor.execute("""
+                INSERT INTO goods_classificator ("UUID", good_uuid, classifier_uuid)
+                VALUES (%s, %s, %s)""", (uuid_good_classificators, 
+                                        good_uuid_good_classificators, 
+                                        classifier_uuid_good_classificators, 
+                                        ))    
 
         return 0
     except RuntimeError as e:
@@ -112,6 +139,8 @@ if __name__ == "__main__":
 
 
 
+def getDictFakePartners(num_rows, fake_data):
+    pass
 
 
 def getDictFakeDepartments(num_rows, fake_data):
@@ -187,7 +216,7 @@ def getDictFakeClassifiers(num_rows):
 
    
     for i in range(num_rows):
-        product_type_row = random(product_type["value"])
+        product_type_row = random(Product_type["value"])
         volume_liters_row = random(volume_liters["min_val"], volume_liters["max_val"])
 
         if product_type_row == "wine" or product_type_row == "champagne":
@@ -229,25 +258,19 @@ def getDictFakeGoods(num_rows, fake_data, classif_uuids):
 
 
     for _ in range(num_rows):
-        goods["UUID"].append(str(uuid.uuid4()))
+        good_uuid = str(uuid.uuid4())
+        goods["uuid"].append(good_uuid)
         goods["description"].append(fake_data.company())
+        goods["good_classifier_uuid"].append(random.choice(classif_uuids))
 
-        good_classificators["UUID"].append(str(uuid.uuid4()))
-        good_classificators["classifier_uuid"].append(random.randint(0, len_classif_uuids - 1))
-
-   
-    for i in range(len(goods["UUID"])):
-
-        elem_uuid = goods["UUID"][i]
-        goods["good_classifier_uuid"].append([elem_uuid, []])
-
-        for _ in range(random.randint(2, 5)):
-            
-            goods["good_classifier_uuid"][i][1].append(random.choice(good_classificators["UUID"]))
-            good_classificators["classifier_uuid"].append(elem_uuid)
+       
+        for _ in range(random.randint(2, 4)):
+            good_classificators["uuid"].append(str(uuid.uuid4()))
+            good_classificators["good_uuid"].append(good_uuid)
+            good_classificators["classifier_uuid"].append(random.choice(classif_uuids))
 
     
-    return [goods, good_classificators]
+    return {"goods": goods, "good_classificators": good_classificators}
 
 
         
