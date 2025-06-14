@@ -84,10 +84,11 @@ class CreateFakeDataPG(CreateFakeData):
         try:
             self.openConnectonDB()
             self.openCursorDB()
+            return self
         except Exception as e:
             raise RuntimeError("Failed to initialize DB connection") from e
 
-    def __exit__(self):
+    def __exit__(self, exc_type, exc_val, exc_tb):
         try:
             self.closeCursorDB()
             self.closeConnectionDB()
