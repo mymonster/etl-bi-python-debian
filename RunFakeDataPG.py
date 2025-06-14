@@ -10,13 +10,13 @@ def main():
     num_rows_man = 5
     num_rows_classifiers = 10
     num_rows_goods = 10
-    num_rows_partners = 5
+    num_rows_partners = 10
 
     dep = getDictFakeDepartments(num_rows_dep, fake_data)
     man = getDictFakeManagers(num_rows_man, dep["uuid"], fake_data)
     classifiers = getDictFakeClassifiers(num_rows_classifiers)
     goods = getDictFakeGoods(num_rows_goods, fake_data, classifiers["uuid"])
-    partners = getDictFakePartners(num_rows_partners, fake_data)
+    partners = getDictFakePartners(num_rows_partners, fake_data, man["uuid"])
         
     try:
         with CreateFakeDataPG() as pg:
@@ -82,6 +82,21 @@ def main():
                                         good_uuid_good_classificators, 
                                         classifier_uuid_good_classificators, 
                                         ))    
+                
+            for i in range(len(partners["guid"])):
+                guid_partner = partners["guid"][i]
+                description_partner = partners["description"][i]
+                isactive_partner = partners["isactive"][i]
+                manager_uid_partner = partners["manager_uid"][i]          
+
+                pg.cursor.execute("""
+                INSERT INTO partners ("guid, description, isactive, manager_uid")
+                VALUES (%s, %s, %s, %s)""", (guid_partner, 
+                                        description_partner, 
+                                        isactive_partner,
+                                        manager_uid_partner 
+                                        ))    
+
 
         return 0
     except RuntimeError as e:
@@ -139,8 +154,22 @@ if __name__ == "__main__":
 
 
 
-def getDictFakePartners(num_rows, fake_data):
-    pass
+def getDictFakePartners(num_rows, fake_data, man_list):
+    
+    partners = {"guid": [],
+                "description": [],
+                "isactive": [],
+                "manager_uid": []
+                }
+    
+    for _ in range(num_rows):
+
+        partners["guid"].append(str(uuid.uuid4()))
+        partners["description"].append(fake_data.company()) 
+        partners["isactive"].append(random.choice([0, 1])) 
+        partners["manager_uid"].append(random.choice(man_list)) 
+    
+    return partners
 
 
 def getDictFakeDepartments(num_rows, fake_data):
@@ -216,8 +245,8 @@ def getDictFakeClassifiers(num_rows):
 
    
     for i in range(num_rows):
-        product_type_row = random(Product_type["value"])
-        volume_liters_row = random(volume_liters["min_val"], volume_liters["max_val"])
+        product_type_row = random.choice(Product_type["value"])
+        volume_liters_row = random.uniform(volume_liters["min_val"], volume_liters["max_val"])
 
         if product_type_row == "wine" or product_type_row == "champagne":
             alcohol_percent_row = random.uniform(12, 24)
