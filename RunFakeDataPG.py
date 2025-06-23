@@ -129,8 +129,8 @@ def getDictFakeGoods(num_rows, fake_data, classif_uuids):
     len_classif_uuids = len(classif_uuids)
 
     goods = {"UUID": [],
-            "description": [],
-            "good_classifier_uuid": []}
+            "description": []
+            }
 
 
     good_classificators = {"UUID": [],
@@ -141,15 +141,15 @@ def getDictFakeGoods(num_rows, fake_data, classif_uuids):
 
     for _ in range(num_rows):
         good_uuid = str(uuid.uuid4())
-        goods["UUID"].append(good_uuid)
-        goods["description"].append(fake_data.company())
-        goods["good_classifier_uuid"].append(random.choice(classif_uuids))
-
-       
+        
         for _ in range(random.randint(2, 4)):
+            ran_classif = random.choice(classif_uuids)
             good_classificators["UUID"].append(str(uuid.uuid4()))
             good_classificators["good_uuid"].append(good_uuid)
-            good_classificators["classifier_uuid"].append(random.choice(classif_uuids))
+            good_classificators["classifier_uuid"].append(ran_classif)
+            
+        goods["UUID"].append(good_uuid)
+        goods["description"].append(fake_data.company())
 
     
     return {"goods": goods, "good_classificators": good_classificators}
@@ -166,20 +166,15 @@ def main():
     num_rows_partners = 10
 
     dep = getDictFakeDepartments(num_rows_dep, fake_data)
-    print(len(dep["description"]))
 
     man = getDictFakeManagers(num_rows_man, dep["uuid"], fake_data)
-    print(len(man["full_name"]))
 
     classifiers = getDictFakeClassifiers(num_rows_classifiers)
-    print(len(classifiers["description"]))
 
     goods = getDictFakeGoods(num_rows_goods, fake_data, classifiers["uuid"])
-    print(len(goods["goods"]))
 
     partners = getDictFakePartners(num_rows_partners, fake_data, man["uuid"])
-    print(len(partners["description"]))
-        
+      
     try:
         with CreateFakeDataPG() as pg:
             for i in range(len(dep["uuid"])):
@@ -203,6 +198,8 @@ def main():
                 INSERT INTO manager ("UUID", name, second_name, full_name, phone, department)
                 VALUES (%s, %s, %s, %s, %s, %s)""", (uuid_man, name_man, second_name_man, full_name_man, phone_man, department_man))
 
+            
+
             for i in range(len(classifiers["uuid"])):
                 uuid_classifiers = classifiers["uuid"][i]
                 description_classifiers = classifiers["description"][i]
@@ -218,21 +215,19 @@ def main():
                                                  value_of_measurement_numeric_classifiers, 
                                                  value_of_measurement_string_classifiers))
 
-
+           
 
             for i in range(len(goods["goods"]["UUID"])):
                 uuid_goods = goods["goods"]["UUID"][i]
                 description_goods = goods["goods"]["description"][i]
-                good_classifier_uuid_goods = goods["goods"]["good_classifier_uuid"][i]
+                
 
                 pg.cursor.execute("""
-                INSERT INTO good ("UUID", description, good_classifier_uuid)
-                VALUES (%s, %s, %s)""", (uuid_goods, 
-                                        description_goods, 
-                                        good_classifier_uuid_goods, 
-                                        ))
+                INSERT INTO good ("UUID", description)
+                VALUES (%s, %s)""", (uuid_goods, description_goods))
 
-           
+  
+
             for i in range(len(goods["good_classificators"]["good_uuid"])):
                 uuid_good_classificators = goods["good_classificators"]["UUID"][i]
                 good_uuid_good_classificators = goods["good_classificators"]["good_uuid"][i]
@@ -244,7 +239,9 @@ def main():
                                         good_uuid_good_classificators, 
                                         classifier_uuid_good_classificators, 
                                         ))    
-                
+
+
+
             for i in range(len(partners["guid"])):
                 guid_partner = partners["guid"][i]
                 description_partner = partners["description"][i]
@@ -259,7 +256,7 @@ def main():
                                         manager_uid_partner 
                                         ))    
 
-
+            pg._conn.commit()
         return 0
     except RuntimeError as e:
         print(f"[!] Ошибка при работе с базой: {e}")
